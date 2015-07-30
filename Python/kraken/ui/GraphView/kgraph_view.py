@@ -4,8 +4,8 @@
 
 from PySide import QtGui, QtCore
 
-from graph_view.graph_view import GraphView
-from graph_view.connection import Connection
+from pyflowgraph.graph_view import GraphView
+from pyflowgraph.connection import Connection
 from knode import KNode
 
 from kraken.core.maths import Vec2
@@ -14,10 +14,10 @@ from kraken.core.configs.config import Config
 
 
 class KGraphView(GraphView):
-    
+
     beginCopyData = QtCore.Signal()
     endCopyData = QtCore.Signal()
-    
+
     beginPasteData = QtCore.Signal()
     endPasteData = QtCore.Signal()
 
@@ -63,7 +63,7 @@ class KGraphView(GraphView):
     ## Events
     def mousePressEvent(self, event):
 
-        # If the contextual node list is open, close it. 
+        # If the contextual node list is open, close it.
         contextualNodeList = self.getGraphViewWidget().getContextualNodeList()
         if contextualNodeList is not None and contextualNodeList.isVisible():
             contextualNodeList.searchLineEdit.clear()
