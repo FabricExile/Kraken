@@ -111,7 +111,7 @@ class FabriceSpineGuide(FabriceSpine):
         self.bezierSpineSpliceOp.setInput('tip', self.spineEndCtrl)
 
         # Add Xfo Outputs
-        self.bezierSpineSpliceOp.setOutput('outputs', self.tailVertebraeOutput.getTarget())
+        self.bezierSpineSpliceOp.setOutput('outputs', self.spineVertebraeOutput.getTarget())
 
         self.loadData({
             'name': name,
@@ -149,7 +149,7 @@ class FabriceSpineGuide(FabriceSpine):
             raise IndexError("'count' must be > 0")
 
 
-        vertebraeOutputs = self.tailVertebraeOutput.getTarget()
+        vertebraeOutputs = self.spineVertebraeOutput.getTarget()
         if count > len(vertebraeOutputs):
             for i in xrange(len(vertebraeOutputs), count):
                 debugCtrl = Control('spine' + str(i+1).zfill(2), parent=self.outputHrcGrp, shape="vertebra")
