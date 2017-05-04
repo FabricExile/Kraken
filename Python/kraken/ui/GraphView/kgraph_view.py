@@ -307,6 +307,16 @@ class KGraphView(GraphView):
 
         clipboardData = self.__class__._clipboardData
 
+        # print "Paste Data"
+        # print "mirrored: " + str(mirrored)
+        # import pprint
+        # pp = pprint.PrettyPrinter(indent=4)
+
+        # for comp in clipboardData['components']:
+        #     for k, v in comp.iteritems():
+        #         if k.endswith('Xfo'):
+        #             print "{}: {}".format(str(k), str(v))
+
         krakenSystem = KrakenSystem.getInstance()
         delta = pos - clipboardData['copyPos']
         self.clearSelection()
@@ -317,13 +327,10 @@ class KGraphView(GraphView):
             componentClass = krakenSystem.getComponentClass(componentData['class'])
             component = componentClass(parent=self.__rig)
 
-            if mirrored:
-                config = Config.getInstance()
-                mirrorMap = config.getNameTemplate()['mirrorMap']
-                component.setLocation(mirrorMap[componentData['location']])
-                component.pasteData(componentData, setLocation=False)
-            else:
-                component.pasteData(componentData, setLocation=True)
+            # if mirrored:
+            component.pasteData(componentData, setLocation=True, mirror=mirrored)
+            # else:
+            #     component.pasteData(componentData, setLocation=True, mirror=False)
 
             decoratedName = component.getName() + component.getDecoratedName()
             nameMapping[componentData['name'] + ":" + componentData['location']] = decoratedName
@@ -333,7 +340,19 @@ class KGraphView(GraphView):
 
             node = KNode(self, component)
             self.addNode(node)
-            self.selectNode(node, False)
+            # self.selectNode(node, clearSelection=False)
+            self.selectNode(node, clearSelection=True)
+
+            self.copySettings(pos)
+
+            import pprint
+            print "New Data on New Node"
+            pp = pprint.PrettyPrinter(indent=4)
+
+            for comp in clipboardData['components']:
+                for k, v in comp.iteritems():
+                    if k.endswith('Xfo'):
+                        print "{}: {}".format(str(k), str(v))
 
             # save a dict of the nodes using the orignal names
             pastedComponents[nameMapping[componentData['name'] + ":" + componentData['location']]] = component

@@ -961,7 +961,7 @@ class Component(Object3D):
 
         return self.saveData()
 
-    def pasteData(self, data, setLocation=True):
+    def pasteData(self, data, setLocation=True, mirror=False):
         """Paste a copied guide representation.
 
         Args:
@@ -973,15 +973,35 @@ class Component(Object3D):
 
         """
 
-        if data['location'] != self.getLocation():
+        import pprint
+        print "Orig pasted data"
+        pp = pprint.PrettyPrinter(indent=4)
+
+        for k, v in data.iteritems():
+            if k.endswith('Xfo'):
+                print "{}: {}".format(str(k), str(v))
+
+        if mirror:
             config = Config.getInstance()
             mirrorMap = config.getNameTemplate()['mirrorMap']
-            if mirrorMap[data['location']] != data['location']:
-                data = mirrorData(data, 0)
+            data['location'] = mirrorMap[data['location']]
+            data = mirrorData(data, 0)
 
-        if setLocation is False:
-            del data['location']
+            print "post mirror data"
+            pp = pprint.PrettyPrinter(indent=4)
 
+            for k, v in data.iteritems():
+                if k.endswith('Xfo'):
+                    print "{}: {}".format(str(k), str(v))
+
+        # if data['location'] != self.getLocation():
+        #     config = Config.getInstance()
+        #     mirrorMap = config.getNameTemplate()['mirrorMap']
+        #     if mirrorMap[data['location']] != data['location']:
+        #         data = mirrorData(data, 0)
+
+        # if setLocation is False:
+        #     del data['location']
 
         self.loadData(data)
 
