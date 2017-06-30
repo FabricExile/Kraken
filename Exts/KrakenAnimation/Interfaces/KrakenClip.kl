@@ -10,6 +10,6 @@ interface KrakenClip {
   Float32 evaluateFloat32!(UInt32 id, io Ref<KrakenKLRig> rig, KrakenClipContext context);
   Xfo evaluateXfo!(UInt32 id, io Ref<KrakenKLRig> rig, KrakenClipContext context);
   apply(io Ref<KrakenKLRig> rig, KrakenClipContext context, Float32 factor);
-  JSONDictValue saveToJson!();
-  loadFromJson!(JSONDictValue json);
+  saveToJson!(io FTL_JSONObjectEncoder encoder);
+  loadFromJson!(io FTL_JSONObject decoder);
 };

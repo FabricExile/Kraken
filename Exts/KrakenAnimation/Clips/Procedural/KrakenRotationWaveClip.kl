@@ -78,24 +78,25 @@ function KrakenRotationWaveClip.apply(io Ref<KrakenKLRig> rig, KrakenClipContext
   clip.lookup.applyClip(rig, clip, context, factor);
 }
 
-function JSONDictValue KrakenRotationWaveClip.saveToJson!() {
-  JSONArrayValue waves();
+function KrakenRotationWaveClip.saveToJson!(io FTL_JSONObjectEncoder encoder) {
+  FTL_JSONArrayEncoder waveArrayEncoder = encoder.setArray('waves');
   for(Size i=0;i<this.names.size();i++) {
-    JSONDictValue wave();
-    wave.setString('name', this.names[i]);
-    wave.setVec3('axis', this.axes[i]);
-    wave.setScalar('amplitude', this.amplitudes[i]);
-    wave.setScalar('shift', this.shifts[i]);
-    wave.setScalar('speed', this.speeds[i]);
-    wave.setScalar('offset', this.offsets[i]);
-    waves.add(wave);
+    FTL_JSONObjectEncoder waveEncoder = waveArrayEncoder.pushObject();
+    waveEncoder.setString('name', this.names[i]);
+    {
+      FTL_JSONObjectEncoder axisEncoder = waveEncoder.setObject('axis');
+      axisEncoder.setFloat64('x', this.axes[i].x);
+      axisEncoder.setFloat64('y', this.axes[i].y);
+      axisEncoder.setFloat64('z', this.axes[i].z);
+    }
+    waveEncoder.setFloat64('amplitude', this.amplitudes[i]);
+    waveEncoder.setFloat64('shift', this.shifts[i]);
+    waveEncoder.setFloat64('speed', this.speeds[i]);
+    waveEncoder.setFloat64('offset', this.offsets[i]);
   }
-  JSONDictValue content();
-  content.set('waves', waves);
-  return content;
 }
 
-function KrakenRotationWaveClip.loadFromJson!(JSONDictValue json) {
+function KrakenRotationWaveClip.loadFromJson!(io FTL_JSONObject decoder) {
   this.names.resize(0);
   this.nameToId.clear();
   this.axes.resize(0);
@@ -104,15 +105,19 @@ function KrakenRotationWaveClip.loadFromJson!(JSONDictValue json) {
   this.speeds.resize(0);
   this.offsets.resize(0);
 
-  JSONArrayValue waves = json.get('waves');
-  for(Size i=0;i<waves.size();i++) {
-    JSONDictValue wave = waves.get(i);
-    String name = wave.getString('name');
-    Vec3 axis = wave.getVec3('axis');
-    Float32 amplitude = wave.getScalar('amplitude');
-    Float32 shift = wave.getScalar('shift');
-    Float32 speed = wave.getScalar('speed');
-    Float32 offset = wave.getScalar('offset');
+  FTL_JSONArray waveArrayDecoder = decoder.getArray('waves');
+  for(Size i=0;i<waveArrayDecoder.size();i++) {
+    FTL_JSONObject waveDecoder = waveArrayDecoder.getObject(i);
+    String name = waveDecoder.getString('name');
+    FTL_JSONObject axisDecoder = waveDecoder.getObject('axis');
+    Vec3 axis;
+    axis.x = Float32(axisDecoder.getFloat64('x'));
+    axis.y = Float32(axisDecoder.getFloat64('y'));
+    axis.z = Float32(axisDecoder.getFloat64('z'));
+    Float32 amplitude = Float32(waveDecoder.getFloat64('amplitude'));
+    Float32 shift = Float32(waveDecoder.getFloat64('shift'));
+    Float32 speed = Float32(waveDecoder.getFloat64('speed'));
+    Float32 offset = Float32(waveDecoder.getFloat64('offset'));
     this.defineWave(name, axis, amplitude, shift, speed, offset);
   }
 }

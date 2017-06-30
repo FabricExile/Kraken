@@ -1,5 +1,5 @@
 require InlineDrawing;
-require JSON;
+require FTL;
 
 object NBoneIKSolver : KrakenSolver, Persistable {
   Xfo initPose[];
@@ -167,15 +167,20 @@ function NBoneIKSolver.solve!
 /// \dfgPresetTextColor Color(168, 229, 240)
 /// \dfgPresetFolder Solvers\NBoneIKSolver
 function String NBoneIKSolver.saveDataToString(PersistenceContext context){
-  JSONDoc doc();
 
-  JSONArrayValue initPoseJson();
-  for(UInt32 i=0; i<this.initPose.size(); i++)
-      initPoseJson.add(xfoToJSON(this.initPose[i]));
-
-  doc.root.set('initPose', initPoseJson);
-  String jsonStr = doc.write();
-  return jsonStr;
+  FTL_JSONEncoder encoder;
+  {
+    FTL_JSONObjectEncoder objEncoder = encoder.getObject();
+    {
+      FTL_JSONArrayEncoder initPoseEncoder = objEncoder.setArray('initPose');
+      for(UInt32 i=0; i<this.initPose.size(); i++)
+      {
+        FTL_JSONObjectEncoder xfoEncoder = initPoseEncoder.pushObject();
+        xfoToJSON(this.initPose[i], xfoEncoder);
+      }
+    }
+  }
+  return encoder.encode();
 }
 
 
@@ -185,16 +190,11 @@ function String NBoneIKSolver.saveDataToString(PersistenceContext context){
 /// \dfgPresetTextColor Color(168, 229, 240)
 /// \dfgPresetFolder Solvers\NBoneIKSolver
 function NBoneIKSolver.loadDataFromString!(PersistenceContext context, String data){
-  JSONDoc doc();
-  if(doc.parse(data)){
-    if(doc.root.has('initPose')){
-      JSONArrayValue initPoseJson = doc.root.get("initPose");
-      this.initPose.resize(0);
-      for (UInt32 i = 0; i < initPoseJson.size(); i++)
-          this.initPose.push(xfoFromJSON(initPoseJson.get(i)));
-    }
-  }
-  else{
-      setError("ERROR Loading NBoneIKSolver. Saved JSON data is not valid");
-  }
+  FTL_JSONDecoder decoder = FTL_JSONDecoder(data);
+  FTL_JSONObject root = decoder.decode();
+  FTL_JSONArray initPoseDecoder = root.getArray('initPose');
+
+  this.initPose.resize(0);
+  for (UInt32 i = 0; i < initPoseDecoder.size(); i++)
+      this.initPose.push(xfoFromJSON(initPoseDecoder.getObject(i)));
 }

@@ -94,94 +94,92 @@ function KrakenFCurveClip.apply(io Ref<KrakenKLRig> rig, KrakenClipContext conte
   clip.lookup.applyClip(rig, clip, context, factor);
 }
 
-function JSONDictValue KrakenFCurveClip.saveToJson!() {
-  JSONArrayValue values();
+function KrakenFCurveClip.saveToJson!(io FTL_JSONObjectEncoder encoder) {
+  
+  FTL_JSONArrayEncoder valueArrayEncoder = encoder.setArray('values');
+
   for(Size i=0;i<this.tracks.size();i++) {
-    JSONDictValue value();
-    value.setString('name', this.names[i]);
-    value.setInteger('defaultInterpolation', this.tracks[i][0].defaultInterpolation);
+
+    FTL_JSONObjectEncoder valueEncoder = valueArrayEncoder.pushObject();
+    valueEncoder.setString('name', this.names[i]);
+    valueEncoder.setSInt32('defaultInterpolation', this.tracks[i][0].defaultInterpolation);
 
     KeyframeTrack tracks[] = this.tracks[i];
-    JSONArrayValue trackValues();
-    for(Size j=0;j<tracks.size();j++) {
-      JSONDictValue trackValue();
-      trackValue.setString('name', tracks[j].name);
-      trackValue.setScalar('colorR', tracks[j].color.r);
-      trackValue.setScalar('colorG', tracks[j].color.g);
-      trackValue.setScalar('colorB', tracks[j].color.b);
-      trackValue.setScalar('colorA', tracks[j].color.a);
-      trackValue.setScalar('defaultValue', tracks[j].defaultValue);
-      trackValue.setInteger('defaultInterpolation', tracks[j].defaultInterpolation);
 
-      JSONArrayValue keyValues();
+    {
+      FTL_JSONArrayEncoder trackArrayEncoder = valueEncoder.setArray('tracks');
+      for(Size j=0;j<tracks.size();j++) {
+        FTL_JSONObjectEncoder trackEncoder = trackArrayEncoder.pushObject();
 
-      //Keyframe keys[];
-      for(Size k=0;k<tracks[j].keys.size();k++) {
-        JSONDictValue keyValue();
-        keyValue.setScalar('time', tracks[j].keys[k].time);
-        keyValue.setScalar('value', tracks[j].keys[k].value);
-        keyValue.setInteger('interpolation', tracks[j].keys[k].interpolation);
-        keyValue.setScalar('inTangentX', tracks[j].keys[k].inTangent.x);
-        keyValue.setScalar('inTangentY', tracks[j].keys[k].inTangent.y);
-        keyValue.setScalar('outTangentX', tracks[j].keys[k].outTangent.x);
-        keyValue.setScalar('outTangentY', tracks[j].keys[k].outTangent.y);
-        keyValues.add(keyValue);
+        trackEncoder.setString('name', tracks[j].name);
+        trackEncoder.setFloat64('colorR', tracks[j].color.r);
+        trackEncoder.setFloat64('colorG', tracks[j].color.g);
+        trackEncoder.setFloat64('colorB', tracks[j].color.b);
+        trackEncoder.setFloat64('colorA', tracks[j].color.a);
+        trackEncoder.setFloat64('defaultValue', tracks[j].defaultValue);
+        trackEncoder.setSInt32('defaultInterpolation', tracks[j].defaultInterpolation);
+
+        {
+          FTL_JSONArrayEncoder keyArrayEncoder = trackEncoder.setArray('keys');
+          for(Size k=0;k<tracks[j].keys.size();k++) {
+            FTL_JSONObjectEncoder keyEncoder = keyArrayEncoder.pushObject();
+            keyEncoder.setFloat64('time', tracks[j].keys[k].time);
+            keyEncoder.setFloat64('value', tracks[j].keys[k].value);
+            keyEncoder.setSInt32('interpolation', tracks[j].keys[k].interpolation);
+            keyEncoder.setFloat64('inTangentX', tracks[j].keys[k].inTangent.x);
+            keyEncoder.setFloat64('inTangentY', tracks[j].keys[k].inTangent.y);
+            keyEncoder.setFloat64('outTangentX', tracks[j].keys[k].outTangent.x);
+            keyEncoder.setFloat64('outTangentY', tracks[j].keys[k].outTangent.y);
+          }
+        }
       }
-
-      trackValue.set('keys', keyValues);
-      trackValues.add(trackValue);
     }
-    value.set('tracks', trackValues);
-    values.add(value);
   }
-  JSONDictValue content();
-  content.set('values', values);
-  return content;
 }
 
-function KrakenFCurveClip.loadFromJson!(JSONDictValue json) {
+function KrakenFCurveClip.loadFromJson!(io FTL_JSONObject decoder) {
   this.names.resize(0);
   this.nameToId.clear();
   this.tracks.resize(0);
   this.keyIndex.resize(0);
 
-  JSONArrayValue values = json.get('values');
-  for(Size i=0;i<values.size();i++) {
-    JSONDictValue value = values.get(i);
-    String name = value.getString('name');
-    Integer defaultInterpolation = value.getInteger('defaultInterpolation');
+  FTL_JSONArray valueArrayDecoder = decoder.getArray('values');
+  for(Size i=0;i<valueArrayDecoder.size();i++) {
+    FTL_JSONObject valueDecoder = valueArrayDecoder.getObject(i);
+    String name = valueDecoder.getString('name');
+    Integer defaultInterpolation = valueDecoder.getSInt32('defaultInterpolation');
 
     KeyframeTrack tracks[] = this.createChannel(name, defaultInterpolation);
-    JSONArrayValue trackValues = value.get('tracks');
-    if(tracks.size() != trackValues.size())
+    FTL_JSONArray trackArrayDecoder = valueDecoder.getArray('tracks');
+    if(tracks.size() != trackArrayDecoder.size())
       continue;
 
-    for(Size j=0;j<trackValues.size();j++) {
-      JSONDictValue trackValue = trackValues.get(j);
+    for(Size j=0;j<trackArrayDecoder.size();j++) {
+      FTL_JSONObject trackDecoder = trackArrayDecoder.getObject(j);
 
-      tracks[j].name = trackValue.getString('name');
-      tracks[j].color.r = trackValue.getScalar('colorR');
-      tracks[j].color.g = trackValue.getScalar('colorG');
-      tracks[j].color.b = trackValue.getScalar('colorB');
-      tracks[j].color.a = trackValue.getScalar('colorA');
-      tracks[j].defaultValue = trackValue.getScalar('defaultValue');
-      tracks[j].defaultInterpolation = trackValue.getInteger('defaultInterpolation');
+      tracks[j].name = trackDecoder.getString('name');
+      tracks[j].color.r = Float32(trackDecoder.getFloat64('colorR'));
+      tracks[j].color.g = Float32(trackDecoder.getFloat64('colorG'));
+      tracks[j].color.b = Float32(trackDecoder.getFloat64('colorB'));
+      tracks[j].color.a = Float32(trackDecoder.getFloat64('colorA'));
+      tracks[j].defaultValue = Float32(trackDecoder.getFloat64('defaultValue'));
+      tracks[j].defaultInterpolation = trackDecoder.getSInt32('defaultInterpolation');
 
-      JSONArrayValue keyValues = trackValue.get('keys');
-      for(Size k=0;k<keyValues.size();k++) {
-        JSONDictValue keyValue = keyValues.get(k);
+      FTL_JSONArray keyArrayDecoder = trackDecoder.getArray('keys');
+      for(Size k=0;k<keyArrayDecoder.size();k++) {
+        FTL_JSONObject keyDecoder = keyArrayDecoder.getObject(k);
         Keyframe key(
-          keyValue.getScalar('time'),
-          keyValue.getScalar('value'),
+          Float32(keyDecoder.getFloat64('time')),
+          Float32(keyDecoder.getFloat64('value')),
           Vec2(
-            keyValue.getScalar('inTangentX'),
-            keyValue.getScalar('inTangentY')
+            Float32(keyDecoder.getFloat64('inTangentX')),
+            Float32(keyDecoder.getFloat64('inTangentY'))
           ),
           Vec2(
-            keyValue.getScalar('outTangentX'),
-            keyValue.getScalar('outTangentY')
+            Float32(keyDecoder.getFloat64('outTangentX')),
+            Float32(keyDecoder.getFloat64('outTangentY'))
           ),
-          keyValue.getInteger('interpolation')
+          keyDecoder.getSInt32('interpolation')
         );
         tracks[j].addKey(key);
       }

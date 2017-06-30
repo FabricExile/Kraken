@@ -1,55 +1,60 @@
-require JSON;
+require FTL;
 
-/// \dfgPresetTitle QuatFromJSON
-/// \dfgPresetColor Color(49, 60, 61)
-/// \dfgPresetHeaderColor Color(42, 94, 102)
-/// \dfgPresetTextColor Color(168, 229, 240)
-/// \dfgPresetFolder Utils
-function Quat quatFromJSON(JSONDictValue dict){
-    Quat value;
-    value.v.x = dict.getScalar('x');
-    value.v.y = dict.getScalar('y');
-    value.v.z = dict.getScalar('z');
-    value.w = dict.getScalar('w');
+/// \dfgPresetOmit
+function Vec3 vec3FromJSON(FTL_JSONObject decoder){
+    Vec3 value;
+    value.x = Float32(decoder.getFloat64('x'));
+    value.y = Float32(decoder.getFloat64('y'));
+    value.z = Float32(decoder.getFloat64('z'));
     return value;
 }
 
-/// \dfgPresetTitle QuatToJSON
-/// \dfgPresetColor Color(49, 60, 61)
-/// \dfgPresetHeaderColor Color(42, 94, 102)
-/// \dfgPresetTextColor Color(168, 229, 240)
-/// \dfgPresetFolder Utils
-function JSONDictValue quatToJSON(Quat value){
-    JSONDictValue dict();
-    dict.setScalar('x', value.v.x);
-    dict.setScalar('y', value.v.y);
-    dict.setScalar('z', value.v.z);
-    dict.setScalar('w', value.w);
-    return dict;
+/// \dfgPresetOmit
+function vec3ToJSON(Vec3 value, io FTL_JSONObjectEncoder encoder){
+    encoder.setFloat64('x', value.x);
+    encoder.setFloat64('y', value.y);
+    encoder.setFloat64('z', value.z);
 }
 
-/// \dfgPresetTitle XfoToJSON
-/// \dfgPresetColor Color(49, 60, 61)
-/// \dfgPresetHeaderColor Color(42, 94, 102)
-/// \dfgPresetTextColor Color(168, 229, 240)
-/// \dfgPresetFolder Utils
-function JSONDictValue xfoToJSON(Xfo value) {
-    JSONDictValue dict();
-    dict.setVec3("tr", value.tr);
-    dict.setVec3("sc", value.sc);
-    dict.set("ori", quatToJSON(value.ori));
-    return dict;
+/// \dfgPresetOmit
+function Quat quatFromJSON(FTL_JSONObject decoder){
+    Quat value;
+    value.v.x = Float32(decoder.getFloat64('x'));
+    value.v.y = Float32(decoder.getFloat64('y'));
+    value.v.z = Float32(decoder.getFloat64('z'));
+    value.w = Float32(decoder.getFloat64('w'));
+    return value;
 }
 
-/// \dfgPresetTitle XfoFromJSON
-/// \dfgPresetColor Color(49, 60, 61)
-/// \dfgPresetHeaderColor Color(42, 94, 102)
-/// \dfgPresetTextColor Color(168, 229, 240)
-/// \dfgPresetFolder Utils
-function Xfo xfoFromJSON(JSONDictValue dict) {
+/// \dfgPresetOmit
+function quatToJSON(Quat value, io FTL_JSONObjectEncoder encoder){
+    encoder.setFloat64('x', value.v.x);
+    encoder.setFloat64('y', value.v.y);
+    encoder.setFloat64('z', value.v.z);
+    encoder.setFloat64('w', value.w);
+}
+
+/// \dfgPresetOmit
+function xfoToJSON(Xfo value, io FTL_JSONObjectEncoder encoder) {
+    {
+        FTL_JSONObjectEncoder trEncoder = encoder.setObject('tr');
+        vec3ToJSON(value.tr, trEncoder);
+      }
+    {
+        FTL_JSONObjectEncoder scEncoder = encoder.setObject('sc');
+        vec3ToJSON(value.sc, scEncoder);
+      }
+    {
+        FTL_JSONObjectEncoder oriEncoder = encoder.setObject('ori');
+        quatToJSON(value.ori, oriEncoder);
+    }
+}
+
+/// \dfgPresetOmit
+function Xfo xfoFromJSON(FTL_JSONObject decoder) {
     Xfo value;
-    value.tr = dict.getVec3("tr");
-    value.sc = dict.getVec3("sc");
-    value.ori = quatFromJSON(dict.get("ori"));
+    value.tr = vec3FromJSON(decoder.getObject('tr'));
+    value.sc = vec3FromJSON(decoder.getObject('sc'));
+    value.ori = quatFromJSON(decoder.getObject('ori'));
     return value;
 }

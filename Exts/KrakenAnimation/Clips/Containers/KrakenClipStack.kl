@@ -50,35 +50,33 @@ function KrakenClipStack.apply(io Ref<KrakenKLRig> rig, KrakenClipContext contex
     this.clips[i].apply(rig, context, factor * this.weights[i]);
 }
 
-function JSONDictValue KrakenClipStack.saveToJson!() {
-  JSONArrayValue clips();
+function KrakenClipStack.saveToJson!(io FTL_JSONObjectEncoder encoder) {
+  FTL_JSONArrayEncoder clipArrayEncoder = encoder.setArray('clips');
   for(Size i=0;i<this.clips.size();i++) {
-    JSONDictValue clip();
-    clip.setString('clipType', String(this.clips[i].type()));
-    clip.setScalar('weight', this.weights[i]);
-    clip.set('content', this.clips[i].saveToJson());
-    clips.add(clip);
+    FTL_JSONObjectEncoder clipEncoder = clipArrayEncoder.pushObject();
+    clipEncoder.setString('clipType', String(this.clips[i].type()));
+    clipEncoder.setFloat64('weight', this.weights[i]);
+    {
+      FTL_JSONObjectEncoder clipContentEncoder = clipEncoder.setObject('content');
+      this.clips[i].saveToJson(clipContentEncoder);
+    }
   }
-
-  JSONDictValue content();
-  content.set('clips', clips);
-  return content;
 }
 
-function KrakenClipStack.loadFromJson!(JSONDictValue json) {
+function KrakenClipStack.loadFromJson!(io FTL_JSONObject decoder) {
   this.clips.resize(0);
   this.weights.resize(0);
 
-  JSONArrayValue clips = json.get('clips');
-  for(Size i=0;i<clips.size();i++) {
-    JSONDictValue clip = clips.get(i);
-    String clipType = clip.getString('clipType');
+  FTL_JSONArray clipArrayDecoder = decoder.getArray('clips');
+  for(Size i=0;i<clipArrayDecoder.size();i++) {
+    FTL_JSONObject clipDecoder = clipArrayDecoder.getObject(i);
+    String clipType = clipDecoder.getString('clipType');
     KrakenClip c = KrakenClip_getFromTypeName(clipType);
     if(c == null)
       continue;
-    Float32 weight = clip.getScalar('weight');
-    JSONDictValue content = clip.get('content');
-    c.loadFromJson(content);
+    Float32 weight = Float32(clipDecoder.getFloat64('weight'));
+    FTL_JSONObject contentDecoder = clipDecoder.getObject('content');
+    c.loadFromJson(contentDecoder);
     this.addClip(c, weight);
   }
 }

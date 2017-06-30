@@ -189,13 +189,11 @@ function KrakenAbcClip.apply(io Ref<KrakenKLRig> rig, KrakenClipContext context,
   clip.lookup.applyClip(rig, clip, context, factor);
 }
 
-function JSONDictValue KrakenAbcClip.saveToJson!() {
-  JSONDictValue json();
-  json.setString('filePath', this.filePath.replace('\\', '/'));
-  return json;
+function KrakenAbcClip.saveToJson!(io FTL_JSONObjectEncoder encoder) {
+  encoder.setString('filePath', this.filePath.replace('\\', '/'));
 }
 
-function KrakenAbcClip.loadFromJson!(JSONDictValue json) {
-  String filePath = json.getString('filePath');
+function KrakenAbcClip.loadFromJson!(io FTL_JSONObject decoder) {
+  String filePath = decoder.getString('filePath');
   this.construct(filePath);
 }
