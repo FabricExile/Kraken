@@ -1,7 +1,6 @@
 require Math;
 require AlembicWrapper;
 require FileIO;
-require Animation;
 
 object KrakenAbcClip : KrakenClip {
   String names[];

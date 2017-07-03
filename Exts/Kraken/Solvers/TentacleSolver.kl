@@ -1,5 +1,5 @@
 require InlineDrawing;
-require Animation;
+require AnimX;
 
 object TentacleSolver : KrakenSolver {
     Vec3 trCurr;
@@ -71,24 +71,33 @@ function Scalar softTentacleLimit(
   Scalar maxVal,
   Vec2 maxValSoftening
 ) {
-  Keyframe key1, key2;
-
   if (val > (maxVal - maxValSoftening.x)) {
     if (val > (maxVal + maxValSoftening.y)) {
       return maxVal;
     }
 
-    key1.time = maxVal - maxValSoftening.x;
-    key1.value = maxVal - maxValSoftening.x;
-    key1.outTangent.x = maxValSoftening.x * 0.5;
-    key1.outTangent.y = maxValSoftening.x * 0.5;
-
-    key2.time = maxVal + maxValSoftening.y;
-    key2.value = maxVal;
-    key2.inTangent.x = maxValSoftening.y * - 0.5;
-    key2.inTangent.y = 0;
-
-    return key1.interpolate(key2, val);
+    AnimX::AnimCurve curve(false /* weighted */);
+    curve.pushKeyframe(
+      maxVal - maxValSoftening.x,
+      maxVal - maxValSoftening.x,
+      AnimX::TangentType_Smooth, 
+      0.0, 
+      0.0, 
+      AnimX::TangentType_Smooth, 
+      maxValSoftening.x * 0.5, 
+      maxValSoftening.x * 0.5
+      );
+    curve.pushKeyframe(
+      maxVal + maxValSoftening.y,
+      maxVal,
+      AnimX::TangentType_Smooth, 
+      maxValSoftening.y * - 0.5, 
+      0.0, 
+      AnimX::TangentType_Smooth, 
+      0.0, 
+      0.0
+      );
+    return Float32(curve.evaluate(val));
   }
   else {
     return val;

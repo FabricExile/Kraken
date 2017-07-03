@@ -6,7 +6,6 @@ Contributed by Roy Nieterau roy_nieterau@hotmail.com
 
 require InlineDrawing;
 require Math;
-require Animation;
 
 
 object TwoBoneStretchyIKSolver : KrakenSolver {

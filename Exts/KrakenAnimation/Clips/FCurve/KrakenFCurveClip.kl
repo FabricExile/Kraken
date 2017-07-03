@@ -1,10 +1,10 @@
 require Math;
+require AnimX;
 
 object KrakenFCurveClip : KrakenClip {
   String names[];
   UInt32 nameToId[String];
-  KeyframeTrack tracks[][]; // PosX, PosY, PosZ, RotX, RotY, RotZ
-  Integer keyIndex[];
+  AnimX::AnimClip clips[];
   KrakenClipLookup lookup;
 };
 
@@ -14,33 +14,30 @@ function KrakenFCurveClip() {
 
 /// \dfgPresetCombo interpolation ("Constant", "Linear", "Bezier")
 /// \dfgPresetDefault interpolation 2
-function KeyframeTrack[] KrakenFCurveClip.createChannel!(String name, UInt32 interpolation) {
+function AnimX::AnimClip KrakenFCurveClip.createChannel!(String name, UInt32 interpolation) {
   this.lookup = null;
 
-  UInt32 id = this.nameToId.get(name, this.tracks.size());
-  if(id == this.tracks.size()) {
-    this.nameToId[name] = this.tracks.size();
+  UInt32 id = this.nameToId.get(name, this.clips.size());
+  if(id == this.clips.size()) {
+    this.nameToId[name] = this.clips.size();
     this.names.push(name);
 
-    KeyframeTrack tracks[](6);
-    tracks[0] = KeyframeTrack(name+'.PosX', Color(1.0, 0.0, 0.0), 0.0, interpolation);
-    tracks[1] = KeyframeTrack(name+'.PosY', Color(0.0, 1.0, 0.0), 0.0, interpolation);
-    tracks[2] = KeyframeTrack(name+'.PosZ', Color(0.0, 0.0, 1.0), 0.0, interpolation);
-    tracks[3] = KeyframeTrack(name+'.RotX', Color(1.0, 0.0, 0.0), 0.0, interpolation);
-    tracks[4] = KeyframeTrack(name+'.RotY', Color(0.0, 1.0, 0.0), 0.0, interpolation);
-    tracks[5] = KeyframeTrack(name+'.RotZ', Color(0.0, 0.0, 1.0), 0.0, interpolation);
-    this.tracks.push(tracks);
+    AnimX::AnimClip clip(name);
+    this.clips.push(clip);
 
-    for(Size i=0;i<tracks.size();i++)
-      this.keyIndex.push(-1);
-
-    return tracks;
+    clip.addCurve('.tr.x', true, Color(1.0, 0.0, 0.0));
+    clip.addCurve('.tr.y', true, Color(0.0, 1.0, 0.0));
+    clip.addCurve('.tr.z', true, Color(0.0, 0.0, 1.0));
+    clip.addCurve('.euler.x', true, Color(1.0, 0.0, 0.0));
+    clip.addCurve('.euler.y', true, Color(0.0, 1.0, 0.0));
+    clip.addCurve('.euler.z', true, Color(0.0, 0.0, 1.0));
+    return clip;
   }
-  return this.tracks[id];
+  return this.clips[id];
 }
 
 UInt32 KrakenFCurveClip.getChannelCount() {
-  return this.tracks.size();
+  return this.clips.size();
 }
 
 String KrakenFCurveClip.getChannelName(UInt32 id) {
@@ -52,11 +49,11 @@ UInt32 KrakenFCurveClip.getChannelType(UInt32 id) {
 }
 
 /// \dfgPresetOmit
-KeyframeTrack[] KrakenFCurveClip.getChannelTracks(String name) {
-  UInt32 id = this.nameToId.get(name, this.tracks.size());
-  if(id != this.tracks.size())
-    return this.tracks[id];
-  KeyframeTrack result[];
+AnimX::AnimCurve[] KrakenFCurveClip.getChannelCurves(String name) {
+  UInt32 id = this.nameToId.get(name, this.clips.size());
+  if(id != this.clips.size())
+    return this.clips[id].allCurves();
+  AnimX::AnimCurve result[];
   return result;
 }
 
@@ -66,24 +63,7 @@ Float32 KrakenFCurveClip.evaluateFloat32!(UInt32 id, io Ref<KrakenKLRig> rig, Kr
 
 Xfo KrakenFCurveClip.evaluateXfo!(UInt32 id, io Ref<KrakenKLRig> rig, KrakenClipContext context) {
   Xfo xfo;
-
-  KeyframeTrack tracks[] = this.tracks[id];
-  if(tracks[0].keys.size() > 0)
-    xfo.tr.x = tracks[0].evaluate(Float32(context.time), this.keyIndex[tracks.size() * id + 0]);
-  if(tracks[1].keys.size() > 0)
-    xfo.tr.y = tracks[1].evaluate(Float32(context.time), this.keyIndex[tracks.size() * id + 1]);
-  if(tracks[2].keys.size() > 0)
-    xfo.tr.z = tracks[2].evaluate(Float32(context.time), this.keyIndex[tracks.size() * id + 2]);
-
-  Vec3 angles(0.0, 0.0, 0.0);
-  if(tracks[3].keys.size() > 0)
-    angles.x = tracks[3].evaluate(Float32(context.time), this.keyIndex[tracks.size() * id + 3]);
-  if(tracks[4].keys.size() > 0)
-    angles.y = tracks[4].evaluate(Float32(context.time), this.keyIndex[tracks.size() * id + 4]);
-  if(tracks[5].keys.size() > 0)
-    angles.z = tracks[5].evaluate(Float32(context.time), this.keyIndex[tracks.size() * id + 5]);
-
-  xfo.ori.setFromEulerAngles(angles);
+  this.clips[id].evaluateXfo('', context.time, CurveRotationInterpolationMethod_Slerp, xfo);
   return xfo;
 }
 
@@ -96,93 +76,28 @@ function KrakenFCurveClip.apply(io Ref<KrakenKLRig> rig, KrakenClipContext conte
 
 function KrakenFCurveClip.saveToJson!(io FTL_JSONObjectEncoder encoder) {
   
-  FTL_JSONArrayEncoder valueArrayEncoder = encoder.setArray('values');
-
-  for(Size i=0;i<this.tracks.size();i++) {
-
+  FTL_JSONArrayEncoder valueArrayEncoder = encoder.setArray('clips');
+  for(Size i=0;i<this.clips.size();i++)
+  {
     FTL_JSONObjectEncoder valueEncoder = valueArrayEncoder.pushObject();
-    valueEncoder.setString('name', this.names[i]);
-    valueEncoder.setSInt32('defaultInterpolation', this.tracks[i][0].defaultInterpolation);
-
-    KeyframeTrack tracks[] = this.tracks[i];
-
-    {
-      FTL_JSONArrayEncoder trackArrayEncoder = valueEncoder.setArray('tracks');
-      for(Size j=0;j<tracks.size();j++) {
-        FTL_JSONObjectEncoder trackEncoder = trackArrayEncoder.pushObject();
-
-        trackEncoder.setString('name', tracks[j].name);
-        trackEncoder.setFloat64('colorR', tracks[j].color.r);
-        trackEncoder.setFloat64('colorG', tracks[j].color.g);
-        trackEncoder.setFloat64('colorB', tracks[j].color.b);
-        trackEncoder.setFloat64('colorA', tracks[j].color.a);
-        trackEncoder.setFloat64('defaultValue', tracks[j].defaultValue);
-        trackEncoder.setSInt32('defaultInterpolation', tracks[j].defaultInterpolation);
-
-        {
-          FTL_JSONArrayEncoder keyArrayEncoder = trackEncoder.setArray('keys');
-          for(Size k=0;k<tracks[j].keys.size();k++) {
-            FTL_JSONObjectEncoder keyEncoder = keyArrayEncoder.pushObject();
-            keyEncoder.setFloat64('time', tracks[j].keys[k].time);
-            keyEncoder.setFloat64('value', tracks[j].keys[k].value);
-            keyEncoder.setSInt32('interpolation', tracks[j].keys[k].interpolation);
-            keyEncoder.setFloat64('inTangentX', tracks[j].keys[k].inTangent.x);
-            keyEncoder.setFloat64('inTangentY', tracks[j].keys[k].inTangent.y);
-            keyEncoder.setFloat64('outTangentX', tracks[j].keys[k].outTangent.x);
-            keyEncoder.setFloat64('outTangentY', tracks[j].keys[k].outTangent.y);
-          }
-        }
-      }
-    }
+    this.clips[i].convertToJSON(valueEncoder);
   }
 }
 
 function KrakenFCurveClip.loadFromJson!(io FTL_JSONObject decoder) {
   this.names.resize(0);
   this.nameToId.clear();
-  this.tracks.resize(0);
-  this.keyIndex.resize(0);
+  this.clips.resize(0);
 
-  FTL_JSONArray valueArrayDecoder = decoder.getArray('values');
+  FTL_JSONArray valueArrayDecoder = decoder.getArray('clips');
   for(Size i=0;i<valueArrayDecoder.size();i++) {
     FTL_JSONObject valueDecoder = valueArrayDecoder.getObject(i);
-    String name = valueDecoder.getString('name');
-    Integer defaultInterpolation = valueDecoder.getSInt32('defaultInterpolation');
 
-    KeyframeTrack tracks[] = this.createChannel(name, defaultInterpolation);
-    FTL_JSONArray trackArrayDecoder = valueDecoder.getArray('tracks');
-    if(tracks.size() != trackArrayDecoder.size())
-      continue;
+    AnimX::AnimClip clip();
+    clip.convertFromJSON(valueDecoder);
 
-    for(Size j=0;j<trackArrayDecoder.size();j++) {
-      FTL_JSONObject trackDecoder = trackArrayDecoder.getObject(j);
-
-      tracks[j].name = trackDecoder.getString('name');
-      tracks[j].color.r = Float32(trackDecoder.getFloat64('colorR'));
-      tracks[j].color.g = Float32(trackDecoder.getFloat64('colorG'));
-      tracks[j].color.b = Float32(trackDecoder.getFloat64('colorB'));
-      tracks[j].color.a = Float32(trackDecoder.getFloat64('colorA'));
-      tracks[j].defaultValue = Float32(trackDecoder.getFloat64('defaultValue'));
-      tracks[j].defaultInterpolation = trackDecoder.getSInt32('defaultInterpolation');
-
-      FTL_JSONArray keyArrayDecoder = trackDecoder.getArray('keys');
-      for(Size k=0;k<keyArrayDecoder.size();k++) {
-        FTL_JSONObject keyDecoder = keyArrayDecoder.getObject(k);
-        Keyframe key(
-          Float32(keyDecoder.getFloat64('time')),
-          Float32(keyDecoder.getFloat64('value')),
-          Vec2(
-            Float32(keyDecoder.getFloat64('inTangentX')),
-            Float32(keyDecoder.getFloat64('inTangentY'))
-          ),
-          Vec2(
-            Float32(keyDecoder.getFloat64('outTangentX')),
-            Float32(keyDecoder.getFloat64('outTangentY'))
-          ),
-          keyDecoder.getSInt32('interpolation')
-        );
-        tracks[j].addKey(key);
-      }
-    }
+    this.nameToId[clip.getName()] = this.clips.size();
+    this.names.push(clip.getName());
+    this.clips.push(clip);
   }
 }
